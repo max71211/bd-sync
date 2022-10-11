@@ -51,15 +51,32 @@ func main() {
 	defer autoDB.Close()
 
 	autoCarMarkRepo := auto_mysql.NewCarMarRepository(autoDB)
+	autoCarModelRepo := auto_mysql.NewCarModelRepository(autoDB)
+	autoCarModificationRepo := auto_mysql.NewCarModificationRepository(autoDB)
 
 	carMarks, err := autoCarMarkRepo.GetAll(mainCtx)
 	if err != nil {
 		log.Println("Get car marks error:", zap.Error(err))
 	}
 
-	log.Println(fmt.Sprintf("LEN %d", len(carMarks)))
 	for _, cm := range carMarks {
-		log.Println(cm.Name)
+		carModels, err := autoCarModelRepo.GetByCarMark(mainCtx, cm.ID)
+		if err != nil {
+			log.Println("GET models err", err)
+			continue
+		}
+
+		log.Println("MARK:", cm.Name, "| CAR_MODELS:", len(carModels))
+		for _, cmd := range carModels {
+			cmdf, err := autoCarModificationRepo.GetByCarModelID(mainCtx, cmd.ID)
+			if err != nil {
+				log.Println("GET modifications err", err)
+				continue
+			}
+			log.Println("MODEL:", cmd.Name, "| MODEL_MODIFICATIONS:", len(cmdf))
+		}
+		log.Println()
+		log.Println("################################")
 	}
 
 	// endregion datastore

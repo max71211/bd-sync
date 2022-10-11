@@ -19,7 +19,7 @@ func NewCarMarRepository(db *sqlx.DB) *CarMarRepository {
 	return &CarMarRepository{db: db}
 }
 
-// CarMarRepository data access layer for users
+// CarMarRepository data access layer for car mark
 type CarMarRepository struct {
 	db *sqlx.DB
 }
