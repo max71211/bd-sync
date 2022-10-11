@@ -5,9 +5,11 @@ import (
 	"context"
 	"fmt"
 	"github.com/caarlos0/env/v6"
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
 	"github.com/joho/godotenv"
 	"go.uber.org/zap"
+	"log"
 	"os"
 	"os/signal"
 	"syscall"
@@ -19,8 +21,6 @@ func main() {
 	mainCtx := context.Background()
 
 	// region configuration
-
-	log := zap.L()
 
 	err := godotenv.Load()
 	if err != nil {
@@ -54,19 +54,24 @@ func main() {
 
 	carMarks, err := autoCarMarkRepo.GetAll(mainCtx)
 	if err != nil {
-		log.Info("Get car marks", zap.Error(err))
+		log.Println("Get car marks error:", zap.Error(err))
 	}
 
+	log.Println(fmt.Sprintf("LEN %d", len(carMarks)))
 	for _, cm := range carMarks {
-		log.Info(cm.Name)
+		log.Println(cm.Name)
 	}
 
 	// endregion datastore
 
+	// region useCases
+
+	// endregion useCases
+
 	// region waiter
 
-	log.Debug("the service is started")
-	defer log.Debug("the service is stopped")
+	log.Println("the service is started")
+	defer log.Println("the service is stopped")
 
 	sig := make(chan os.Signal, 1)
 	defer close(sig)

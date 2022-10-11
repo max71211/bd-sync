@@ -1,0 +1,8 @@
+.idea
+.DS_Store
+*.iml
+
+# code generation
+**/*_mock_test.go
+**/*.bindata.go
+**/*.gen.go

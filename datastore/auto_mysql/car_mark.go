@@ -28,8 +28,8 @@ type carMarkDTO struct {
 	ID         int            `db:"id_car_mark"`
 	Name       string         `db:"name"`
 	NameRU     sql.NullString `db:"name_rus"`
-	DateCreate time.Time      `db:"date_create"`
-	DateUpdate time.Time      `db:"date_update"`
+	DateCreate int64          `db:"date_create"`
+	DateUpdate int64          `db:"date_update"`
 	IDCarType  int            `db:"id_car_type"`
 }
 
@@ -37,8 +37,8 @@ func (dto *carMarkDTO) Entity() *models.CarMark {
 	out := &models.CarMark{
 		ID:         dto.ID,
 		Name:       dto.Name,
-		DateCreate: dto.DateCreate,
-		DateUpdate: dto.DateUpdate,
+		DateCreate: time.Unix(dto.DateCreate, 0),
+		DateUpdate: time.Unix(dto.DateUpdate, 0),
 		IDCarType:  dto.IDCarType,
 	}
 
@@ -52,7 +52,8 @@ func (dto *carMarkDTO) Entity() *models.CarMark {
 func (repo *CarMarRepository) GetAll(ctx context.Context) ([]*models.CarMark, error) {
 	var dtos []*carMarkDTO
 
-	err := sqlx.Select(repo.db, &dtos, fmt.Sprintf(`SELECT %s FROM %s;`, carMarkFields, carMarkTable), nil)
+	err := sqlx.SelectContext(ctx, repo.db, &dtos,
+		fmt.Sprintf(`SELECT %s FROM %s;`, carMarkFields, carMarkTable))
 	if err != nil {
 		return nil, err
 	}
