@@ -10,12 +10,13 @@ import (
 )
 
 const (
-	carModificationFields = `id_car_modification, id_car_serie, id_car_model, car_modification.name, start_production_year, end_production_year, date_create, date_update, id_car_type`
-	carModificationTable  = "car_modification"
-	carSerieFields        = `car_serie.name as serie_name`
-	carSerieTable         = "car_serie"
-	carGenerationFields   = `car_generation.name as generation_name, car_generation.year_begin as generation_year_begin, car_generation.year_end as generation_year_end`
-	carGenerationTable    = "car_generation"
+	carModificationFields = `id_car_modification, car_modification.id_car_serie, car_modification.id_car_model, 
+car_modification.name, start_production_year, end_production_year, car_modification.date_create, car_modification.date_update, car_modification.id_car_type`
+	carModificationTable = "car_modification"
+	carSerieFields       = `car_serie.name as serie_name`
+	carSerieTable        = "car_serie"
+	carGenerationFields  = `car_generation.name as generation_name, car_generation.year_begin as generation_year_begin, car_generation.year_end as generation_year_end`
+	carGenerationTable   = "car_generation"
 )
 
 // NewCarModificationRepository create data access layer CarModificationRepository
@@ -37,7 +38,7 @@ type carModificationDTO struct {
 	EndProductionYear   *int           `db:"end_production_year"`
 	SerieName           string         `db:"serie_name"`
 	GenerationName      string         `db:"generation_name"`
-	GenerationYearBegin string         `db:"generation_year_begin"`
+	GenerationYearBegin sql.NullString `db:"generation_year_begin"`
 	GenerationYearEnd   sql.NullString `db:"generation_year_end"`
 	DateCreate          int64          `db:"date_create"`
 	DateUpdate          int64          `db:"date_update"`
@@ -55,6 +56,13 @@ func (dto *carModificationDTO) Entity() *models.CarModification {
 		DateCreate:          time.Unix(dto.DateCreate, 0),
 		DateUpdate:          time.Unix(dto.DateUpdate, 0),
 		IDCarType:           dto.IDCarType,
+	}
+
+	if dto.GenerationYearBegin.Valid {
+		out.Generation.YearBegin = &dto.GenerationYearBegin.String
+	}
+	if dto.GenerationYearEnd.Valid {
+		out.Generation.YearEnd = &dto.GenerationYearEnd.String
 	}
 
 	return out
@@ -80,9 +88,9 @@ func (repo *CarModificationRepository) GetByCarModelID(ctx context.Context, carM
 	var dtos []*carModificationDTO
 	err := sqlx.SelectContext(ctx, repo.db, &dtos,
 		fmt.Sprintf(`SELECT %s FROM %s 
-JOIN %s ON %[1]s.id_car_serie = %[2]s.id_car_serie
-JOIN %s ON %[2]s.id_car_generation = %[3]s.id_car_generation
-WHERE id_car_model = %d;`, fmt.Sprintf("%s, %s, %s", carModificationFields, carSerieFields, carGenerationFields), carModificationTable, carSerieTable, carGenerationTable, carModelID))
+JOIN %s ON %[2]s.id_car_serie = %[3]s.id_car_serie
+JOIN %s ON %[3]s.id_car_generation = %[4]s.id_car_generation
+WHERE car_modification.id_car_model = %d;`, fmt.Sprintf("%s, %s, %s", carModificationFields, carSerieFields, carGenerationFields), carModificationTable, carSerieTable, carGenerationTable, carModelID))
 	if err != nil {
 		return nil, err
 	}

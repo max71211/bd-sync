@@ -25,8 +25,8 @@ type CarModelRepository struct {
 }
 
 type carModelDTO struct {
-	ID         int            `db:"id_car_model"`
-	IDCarMar   int            `db:"id_car_mark"`
+	ID         string         `db:"id_car_model"`
+	IDCarMar   string         `db:"id_car_mark"`
 	Name       string         `db:"name"`
 	NameRU     sql.NullString `db:"name_rus"`
 	DateCreate int64          `db:"date_create"`

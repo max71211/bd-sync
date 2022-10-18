@@ -5,7 +5,7 @@ import (
 )
 
 type CarMark struct {
-	ID         int       `json:"id_car_mark"`
+	ID         string    `json:"id_car_mark"`
 	Name       string    `json:"name"`
 	NameRU     *string   `json:"name_rus"`
 	DateCreate time.Time `json:"date_create"`
@@ -14,7 +14,7 @@ type CarMark struct {
 }
 
 type CarModel struct {
-	ID         int       `json:"id_car_model"`
+	ID         string    `json:"id_car_model"`
 	Name       string    `json:"name"`
 	NameRU     *string   `json:"name_rus"`
 	DateCreate time.Time `json:"date_create"`
@@ -39,7 +39,7 @@ type CarModification struct {
 type CarGeneration struct {
 	ID        int     `json:"id_car_generationn"`
 	Name      string  `json:"name"`
-	YearBegin string  `json:"year_begin"`
+	YearBegin *string `json:"year_begin"`
 	YearEnd   *string `json:"year_end"`
 	IDCarType int     `json:"id_car_type"`
 }

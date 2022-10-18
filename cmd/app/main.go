@@ -1,7 +1,9 @@
 package main
 
 import (
+	"aopt-db-sync/datastore/aopt_mysql"
 	"aopt-db-sync/datastore/auto_mysql"
+	"aopt-db-sync/usecases"
 	"context"
 	"fmt"
 	"github.com/caarlos0/env/v6"
@@ -50,38 +52,26 @@ func main() {
 	}
 	defer autoDB.Close()
 
+	// AUTO Repos
 	autoCarMarkRepo := auto_mysql.NewCarMarRepository(autoDB)
 	autoCarModelRepo := auto_mysql.NewCarModelRepository(autoDB)
 	autoCarModificationRepo := auto_mysql.NewCarModificationRepository(autoDB)
 
-	carMarks, err := autoCarMarkRepo.GetAll(mainCtx)
-	if err != nil {
-		log.Println("Get car marks error:", zap.Error(err))
-	}
-
-	for _, cm := range carMarks {
-		carModels, err := autoCarModelRepo.GetByCarMark(mainCtx, cm.ID)
-		if err != nil {
-			log.Println("GET models err", err)
-			continue
-		}
-
-		log.Println("MARK:", cm.Name, "| CAR_MODELS:", len(carModels))
-		for _, cmd := range carModels {
-			cmdf, err := autoCarModificationRepo.GetByCarModelID(mainCtx, cmd.ID)
-			if err != nil {
-				log.Println("GET modifications err", err)
-				continue
-			}
-			log.Println("MODEL:", cmd.Name, "| MODEL_MODIFICATIONS:", len(cmdf))
-		}
-		log.Println()
-		log.Println("################################")
-	}
+	// AOPT repos
+	aoptBrandRepo := aopt_mysql.NewBrandsRepository(aoptDB)
+	aoptVehicleRepo := aopt_mysql.NewVehiclesRepository(aoptDB)
+	aoptModificationsRepo := aopt_mysql.NewModificationsRepository(aoptDB)
 
 	// endregion datastore
 
 	// region useCases
+
+	aoptUseCase := usecases.NewAoptUseCase(aoptBrandRepo, aoptVehicleRepo, aoptModificationsRepo)
+	autoUseCase := usecases.NewAutoUseCase(autoCarMarkRepo, autoCarModelRepo, autoCarModificationRepo)
+
+	syncUseCase := usecases.NewSyncUseCase(aoptUseCase, autoUseCase)
+
+	syncUseCase.SyncData(mainCtx)
 
 	// endregion useCases
 
