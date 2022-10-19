@@ -5,7 +5,7 @@ import (
 )
 
 type CarMark struct {
-	ID         string    `json:"id_car_mark"`
+	ID         int64     `json:"id_car_mark"`
 	Name       string    `json:"name"`
 	NameRU     *string   `json:"name_rus"`
 	DateCreate time.Time `json:"date_create"`

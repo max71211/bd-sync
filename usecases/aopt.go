@@ -18,10 +18,12 @@ type brandRepo interface {
 	Upsert(ctx context.Context, in *models.Brand) (*models.Brand, error)
 }
 type vehicleRepo interface {
-	GetAll(ctx context.Context) ([]*models.Vehicle, error)
+	Get(ctx context.Context, in *models.VehicleFilter) ([]*models.Vehicle, error)
+	Upsert(ctx context.Context, in *models.Vehicle) (*models.Vehicle, error)
 }
 type modificationRepo interface {
-	GetAll(ctx context.Context) ([]*models.Modification, error)
+	Get(ctx context.Context, in *models.ModificationFilter) ([]*models.Modification, error)
+	Upsert(ctx context.Context, in *models.Vehicle) (*models.Vehicle, error)
 }
 
 type AoptUseCase struct {
@@ -34,8 +36,16 @@ func (useCase AoptUseCase) GetBrands(ctx context.Context) ([]*models.Brand, erro
 	return useCase.brandRepo.Get(ctx, nil)
 }
 
-func (useCase AoptUseCase) GetBrandByID(ctx context.Context, brandID string) ([]*models.Brand, error) {
-	return useCase.brandRepo.Get(ctx, &models.BrandFilter{ID: &brandID})
+func (useCase AoptUseCase) GetBrandByID(ctx context.Context, brandID int64) (*models.Brand, error) {
+	brands, err := useCase.brandRepo.Get(ctx, &models.BrandFilter{ID: &brandID})
+	if err != nil {
+		return nil, err
+	}
+	if len(brands) == 0 {
+		return nil, nil
+	}
+
+	return brands[0], nil
 }
 
 func (useCase AoptUseCase) GetBrandByName(ctx context.Context, name string) (*models.Brand, error) {
@@ -56,9 +66,33 @@ func (useCase AoptUseCase) UpsertBrand(ctx context.Context, brand *models.Brand)
 }
 
 func (useCase AoptUseCase) GetVehicles(ctx context.Context) ([]*models.Vehicle, error) {
-	return useCase.vehicleRepo.GetAll(ctx)
+	return useCase.vehicleRepo.Get(ctx, nil)
+}
+
+func (useCase AoptUseCase) GetVehicleByID(ctx context.Context, vehicleID int64) (*models.Vehicle, error) {
+	vehicles, err := useCase.vehicleRepo.Get(ctx, &models.VehicleFilter{ID: &vehicleID})
+	if err != nil {
+		return nil, err
+	}
+	if len(vehicles) == 0 {
+		return nil, nil
+	}
+
+	return vehicles[0], nil
+}
+
+func (useCase AoptUseCase) GetVehiclesByBrandID(ctx context.Context, brandID int64) ([]*models.Vehicle, error) {
+	return useCase.vehicleRepo.Get(ctx, &models.VehicleFilter{BrandID: &brandID})
+}
+
+func (useCase AoptUseCase) GetVehiclesByName(ctx context.Context, name string) ([]*models.Vehicle, error) {
+	return useCase.vehicleRepo.Get(ctx, &models.VehicleFilter{Name: &name})
+}
+
+func (useCase AoptUseCase) UpsertVehicle(ctx context.Context, vehicle *models.Vehicle) (*models.Vehicle, error) {
+	return useCase.vehicleRepo.Upsert(ctx, vehicle)
 }
 
 func (useCase AoptUseCase) GetModifications(ctx context.Context) ([]*models.Modification, error) {
-	return useCase.modificationRepo.GetAll(ctx)
+	return useCase.modificationRepo.Get(ctx, nil)
 }

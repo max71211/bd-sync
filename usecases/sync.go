@@ -61,13 +61,14 @@ func (useCase SyncUseCase) SyncData(ctx context.Context) {
 		}
 
 		if brand != nil {
-			//log.Println(cm.ID, "Mark:", cm.Name, "|", brand.ID, "Brand", brand.Name)
 			brand.AutoID = &cm.ID
 		} else {
-			//log.Println(cm.ID, "Mark:", cm.Name, "|", "Empty")
+			var tecDocID int64 = 0
 			brand = &models.Brand{
-				Name:   cm.Name,
-				AutoID: &cm.ID,
+				ID:       0,
+				Name:     cm.Name,
+				AutoID:   &cm.ID,
+				TecDocID: &tecDocID,
 			}
 		}
 
@@ -75,6 +76,7 @@ func (useCase SyncUseCase) SyncData(ctx context.Context) {
 		if err != nil {
 			log.Fatal("upsert brand error", err)
 		}
+
 		log.Println("Updated brand", brandUpdated)
 
 		//carModels, err := useCase.autoManager.GetModelsByMarkID(ctx, cm.ID)

@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
-	"log"
 	"strings"
 )
 
@@ -35,16 +34,16 @@ func newBrandDTO(in *models.Brand) *brandsDTO {
 	}
 
 	if in.TecDocID != nil {
-		out.TecDocID = sql.NullString{
-			String: *in.TecDocID,
-			Valid:  true,
+		out.TecDocID = sql.NullInt64{
+			Int64: *in.TecDocID,
+			Valid: true,
 		}
 	}
 
 	if in.AutoID != nil {
-		out.AutoID = sql.NullString{
-			String: *in.AutoID,
-			Valid:  true,
+		out.AutoID = sql.NullInt64{
+			Int64: *in.AutoID,
+			Valid: true,
 		}
 	}
 
@@ -52,11 +51,11 @@ func newBrandDTO(in *models.Brand) *brandsDTO {
 }
 
 type brandsDTO struct {
-	ID        string         `db:"id"`
-	AutoID    sql.NullString `db:"auto_id"`
-	TecDocID  sql.NullString `db:"tec_doc_id"`
-	Name      string         `db:"name"`
-	ISPopular bool           `db:"is_popular"`
+	ID        int64         `db:"id"`
+	AutoID    sql.NullInt64 `db:"auto_id"`
+	TecDocID  sql.NullInt64 `db:"tec_doc_id"`
+	Name      string        `db:"name"`
+	ISPopular bool          `db:"is_popular"`
 }
 
 func (dto *brandsDTO) Entity() *models.Brand {
@@ -67,10 +66,10 @@ func (dto *brandsDTO) Entity() *models.Brand {
 	}
 
 	if dto.TecDocID.Valid {
-		out.TecDocID = &dto.TecDocID.String
+		out.TecDocID = &dto.TecDocID.Int64
 	}
 	if dto.AutoID.Valid {
-		out.AutoID = &dto.AutoID.String
+		out.AutoID = &dto.AutoID.Int64
 	}
 
 	return out
@@ -153,25 +152,24 @@ func (repo *BrandsRepository) Upsert(ctx context.Context, in *models.Brand) (*mo
 	dto := newBrandDTO(in)
 
 	query, args, err := repo.db.BindNamed(fmt.Sprintf(`
-INSERT INTO %s (auto_id, tec_doc_id, name, is_popular)
-VALUES (:auto_id, :tec_doc_id, :name, :is_popular)
+INSERT INTO %s (id, auto_id, tec_doc_id, name, is_popular)
+VALUES (:id, :auto_id, :tec_doc_id, :name, :is_popular)
 ON DUPLICATE KEY UPDATE auto_id = :auto_id, 
 tec_doc_id = :tec_doc_id, 
-name = :name, 
+name       = :name, 
 is_popular = :is_popular;`, brandTable), dto)
 	if err != nil {
 		return nil, err
 	}
 
-	log.Println("QUERY", query, "|", args)
+	query = repo.db.Rebind(query)
 
-	//result, err := repo.db.ExecContext(ctx, query, args)
-	//if err != nil {
-	//	return nil, err
-	//}
-	//
-	//bID, _ := result.LastInsertId()
-	//dto.ID = fmt.Sprintf("%d", bID)
+	result, err := repo.db.ExecContext(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+
+	dto.ID, _ = result.LastInsertId()
 
 	return dto.Entity(), nil
 }
