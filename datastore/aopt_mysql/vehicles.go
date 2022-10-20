@@ -104,11 +104,11 @@ func (repo *VehiclesRepository) filteredQuery(in *models.VehicleFilter) (string,
 	conditions := make([]attributes.ConditionAttribute, 0, 0)
 	if in != nil && in.ID != nil {
 		conditions = append(conditions,
-			attributes.NewStrictCondition(brandTable, "id", *in.ID))
+			attributes.NewStrictCondition(vehiclesTable, "id", *in.ID))
 	}
 	if in != nil && in.BrandID != nil {
 		conditions = append(conditions,
-			attributes.NewStrictCondition(brandTable, "brand_id", *in.BrandID))
+			attributes.NewStrictCondition(vehiclesTable, "brand_id", *in.BrandID))
 	}
 	if in != nil && in.Name != nil {
 		nameCond := attributes.NewStrictCondition("", "LOWER(name)", strings.ToLower(*in.Name))
@@ -123,9 +123,9 @@ func (repo *VehiclesRepository) filteredQuery(in *models.VehicleFilter) (string,
 	searchConditions := make([]attributes.ConditionAttribute, 0, 1)
 	if in != nil && in.Search != nil {
 		searchConditions = append(searchConditions,
-			attributes.NewCondition(brandTable, "name", "LIKE", fmt.Sprintf("%%%s%%", *in.Search)))
+			attributes.NewCondition(vehiclesTable, "name", "LIKE", fmt.Sprintf("%%%s%%", *in.Search)))
 	}
-	searchSets, searchMapper, err := attributes.PrepareConditions(attributes.CheckTable(brandTable), " AND ", searchConditions...)
+	searchSets, searchMapper, err := attributes.PrepareConditions(attributes.CheckTable(vehiclesTable), " AND ", searchConditions...)
 	if err != nil {
 		return "", nil, errors.WithStack(err)
 	}

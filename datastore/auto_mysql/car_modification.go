@@ -30,9 +30,9 @@ type CarModificationRepository struct {
 }
 
 type carModificationDTO struct {
-	ID                  int            `db:"id_car_modification"`
-	IDCarSerie          int            `db:"id_car_serie"`
-	IDCarModel          int            `db:"id_car_model"`
+	ID                  int64          `db:"id_car_modification"`
+	IDCarSerie          int64          `db:"id_car_serie"`
+	IDCarModel          int64          `db:"id_car_model"`
 	Name                string         `db:"name"`
 	StartProductionYear *int           `db:"start_production_year"`
 	EndProductionYear   *int           `db:"end_production_year"`
@@ -84,7 +84,7 @@ func (repo *CarModificationRepository) GetAll(ctx context.Context) ([]*models.Ca
 	return out, nil
 }
 
-func (repo *CarModificationRepository) GetByCarModelID(ctx context.Context, carModelID int) ([]*models.CarModification, error) {
+func (repo *CarModificationRepository) GetByCarModelID(ctx context.Context, carModelID int64) ([]*models.CarModification, error) {
 	var dtos []*carModificationDTO
 	err := sqlx.SelectContext(ctx, repo.db, &dtos,
 		fmt.Sprintf(`SELECT %s FROM %s 

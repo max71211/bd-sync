@@ -25,8 +25,8 @@ type CarModelRepository struct {
 }
 
 type carModelDTO struct {
-	ID         string         `db:"id_car_model"`
-	IDCarMar   string         `db:"id_car_mark"`
+	ID         int64          `db:"id_car_model"`
+	IDCarMar   int64          `db:"id_car_mark"`
 	Name       string         `db:"name"`
 	NameRU     sql.NullString `db:"name_rus"`
 	DateCreate int64          `db:"date_create"`
@@ -66,7 +66,7 @@ func (repo *CarModelRepository) GetAll(ctx context.Context) ([]*models.CarModel,
 	return out, nil
 }
 
-func (repo *CarModelRepository) GetByCarMark(ctx context.Context, carMarkID int) ([]*models.CarModel, error) {
+func (repo *CarModelRepository) GetByCarMark(ctx context.Context, carMarkID int64) ([]*models.CarModel, error) {
 	var dtos []*carModelDTO
 	err := sqlx.SelectContext(ctx, repo.db, &dtos,
 		fmt.Sprintf(`SELECT %s FROM %s WHERE id_car_mark = %d;`, carModelFields, carModelTable, carMarkID))
