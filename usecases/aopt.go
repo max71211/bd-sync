@@ -82,7 +82,7 @@ func (useCase AoptUseCase) GetVehicleByID(ctx context.Context, vehicleID int64) 
 }
 
 func (useCase AoptUseCase) GetVehiclesByBrandAndName(ctx context.Context, brandID int64, name string) (*models.Vehicle, error) {
-	result, err := useCase.vehicleRepo.Get(ctx, &models.VehicleFilter{BrandID: &brandID, Name: &name})
+	result, err := useCase.vehicleRepo.Get(ctx, &models.VehicleFilter{BrandID: &brandID, Search: &name})
 	if err != nil {
 		return nil, err
 	}

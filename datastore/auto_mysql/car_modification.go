@@ -90,7 +90,8 @@ func (repo *CarModificationRepository) GetByCarModelID(ctx context.Context, carM
 		fmt.Sprintf(`SELECT %s FROM %s 
 JOIN %s ON %[2]s.id_car_serie = %[3]s.id_car_serie
 JOIN %s ON %[3]s.id_car_generation = %[4]s.id_car_generation
-WHERE car_modification.id_car_model = %d;`, fmt.Sprintf("%s, %s, %s", carModificationFields, carSerieFields, carGenerationFields), carModificationTable, carSerieTable, carGenerationTable, carModelID))
+WHERE car_modification.id_car_model = %d
+ORDER BY car_modification.start_production_year DESC;`, fmt.Sprintf("%s, %s, %s", carModificationFields, carSerieFields, carGenerationFields), carModificationTable, carSerieTable, carGenerationTable, carModelID))
 	if err != nil {
 		return nil, err
 	}

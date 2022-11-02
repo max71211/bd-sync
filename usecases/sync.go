@@ -53,7 +53,9 @@ func (useCase SyncUseCase) SyncData(ctx context.Context) {
 		log.Fatal("Get car marks error:", zap.Error(err))
 	}
 
-	for _, cm := range carMarks {
+	for i, cm := range carMarks {
+		log.Println("##### BRAND:", cm.Name, "#######")
+		log.Println("################################")
 		cm.Name = useCase.transliterate(cm.Name)
 		brand, err := useCase.aoptManager.GetBrandByName(ctx, cm.Name)
 		if errors.Is(err, models.ErrNoObject) {
@@ -91,7 +93,12 @@ func (useCase SyncUseCase) SyncData(ctx context.Context) {
 		}
 
 		for _, cmd := range carModels {
-			vehicle, err := useCase.aoptManager.GetVehiclesByBrandAndName(ctx, brand.ID, useCase.transliterate(cmd.Name))
+			name := useCase.transliterate(cmd.Name)
+			vehicle, err := useCase.aoptManager.GetVehiclesByBrandAndName(ctx, brand.ID, name)
+			if errors.Is(err, models.ErrNoObject) {
+				log.Println("get vehicle by name:", cmd.Name)
+				err = nil
+			}
 			if err != nil {
 				log.Fatal("get vehicle by name error:", err)
 			}
@@ -107,7 +114,7 @@ func (useCase SyncUseCase) SyncData(ctx context.Context) {
 				}
 			}
 
-			log.Println("Vehicle", *vehicle)
+			log.Println("Model:", cmd.Name, "Vehicle:", vehicle.Name)
 
 			// region update_vehicle
 
@@ -119,14 +126,17 @@ func (useCase SyncUseCase) SyncData(ctx context.Context) {
 
 			// endregion update_vehicle
 
-			//mdf, err := useCase.autoManager.GetModificationsByModelID(ctx, cmd.ID)
-			//if err != nil {
-			//	log.Fatal("GET modifications err", err)
-			//}
-			//
-			//log.Println("MODEL:", cmd.Name, "| MODEL_MODIFICATIONS:", len(mdf))
+			mdf, err := useCase.autoManager.GetModificationsByModelID(ctx, cmd.ID)
+			if err != nil {
+				log.Fatal("GET modifications err", err)
+			}
+
+			log.Println("MODEL:", cmd.Name, "| MODEL_MODIFICATIONS:", len(mdf))
 		}
-		log.Println("################################")
+		log.Println()
+		if i == 5 {
+			break
+		}
 	}
 }
 

@@ -29,13 +29,13 @@ type VehicleFilter struct {
 }
 
 type Vehicle struct {
-	ID       int64     `json:"id"`
-	TecDocID *int64    `json:"tec_doc_id"`
-	AutoID   *int64    `json:"auto_id"`
-	BrandID  int64     `json:"brand_id"`
-	Name     string    `json:"name"`
-	YearFrom time.Time `json:"year_from"`
-	YearTo   time.Time `json:"year_to"`
+	ID       int64      `json:"id"`
+	TecDocID *int64     `json:"tec_doc_id"`
+	AutoID   *int64     `json:"auto_id"`
+	BrandID  int64      `json:"brand_id"`
+	Name     string     `json:"name"`
+	YearFrom *time.Time `json:"year_from"`
+	YearTo   *time.Time `json:"year_to"`
 }
 
 type ModificationFilter struct {

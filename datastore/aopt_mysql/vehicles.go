@@ -29,10 +29,8 @@ type VehiclesRepository struct {
 
 func newVehiclesDTO(in *models.Vehicle) *vehiclesDTO {
 	out := &vehiclesDTO{
-		ID:       in.ID,
-		Name:     in.Name,
-		YearFrom: in.YearFrom,
-		YearTo:   in.YearTo,
+		ID:   in.ID,
+		Name: in.Name,
 	}
 
 	if in.TecDocID != nil {
@@ -53,21 +51,19 @@ func newVehiclesDTO(in *models.Vehicle) *vehiclesDTO {
 }
 
 type vehiclesDTO struct {
-	ID       int64         `db:"id"`
-	TecDocID sql.NullInt64 `db:"tec_doc_id"`
-	AutoID   sql.NullInt64 `db:"auto_id"`
-	BrandID  sql.NullInt64 `db:"brand_id"`
-	Name     string        `db:"name"`
-	YearFrom time.Time     `db:"year_from"`
-	YearTo   time.Time     `db:"year_to"`
+	ID       int64          `db:"id"`
+	TecDocID sql.NullInt64  `db:"tec_doc_id"`
+	AutoID   sql.NullInt64  `db:"auto_id"`
+	BrandID  sql.NullInt64  `db:"brand_id"`
+	Name     string         `db:"name"`
+	YearFrom sql.NullString `db:"year_from"`
+	YearTo   sql.NullString `db:"year_to"`
 }
 
 func (dto *vehiclesDTO) Entity() *models.Vehicle {
 	out := &models.Vehicle{
-		ID:       dto.ID,
-		Name:     dto.Name,
-		YearFrom: dto.YearFrom,
-		YearTo:   dto.YearTo,
+		ID:   dto.ID,
+		Name: dto.Name,
 	}
 
 	if dto.TecDocID.Valid {
@@ -75,6 +71,14 @@ func (dto *vehiclesDTO) Entity() *models.Vehicle {
 	}
 	if dto.AutoID.Valid {
 		out.AutoID = &dto.AutoID.Int64
+	}
+	if dto.YearFrom.Valid {
+		t, _ := time.Parse("2006-01-02", dto.YearFrom.String)
+		out.YearFrom = &t
+	}
+	if dto.YearTo.Valid {
+		t, _ := time.Parse("2006-01-02", dto.YearTo.String)
+		out.YearTo = &t
 	}
 
 	return out
@@ -111,7 +115,7 @@ func (repo *VehiclesRepository) filteredQuery(in *models.VehicleFilter) (string,
 			attributes.NewStrictCondition(vehiclesTable, "brand_id", *in.BrandID))
 	}
 	if in != nil && in.Name != nil {
-		nameCond := attributes.NewStrictCondition("", "LOWER(name)", strings.ToLower(*in.Name))
+		nameCond := attributes.NewStrictCondition("", "name", strings.ToLower(*in.Name))
 		nameCond.ValueKey = "name"
 		conditions = append(conditions, nameCond)
 	}
@@ -120,10 +124,10 @@ func (repo *VehiclesRepository) filteredQuery(in *models.VehicleFilter) (string,
 		return "", nil, errors.WithStack(err)
 	}
 
-	searchConditions := make([]attributes.ConditionAttribute, 0, 1)
+	searchConditions := make([]attributes.ConditionAttribute, 0, 0)
 	if in != nil && in.Search != nil {
 		searchConditions = append(searchConditions,
-			attributes.NewCondition(vehiclesTable, "name", "LIKE", fmt.Sprintf("%%%s%%", *in.Search)))
+			attributes.NewCondition(vehiclesTable, "name", "LIKE", fmt.Sprintf("%s%%", *in.Search)))
 	}
 	searchSets, searchMapper, err := attributes.PrepareConditions(attributes.CheckTable(vehiclesTable), " AND ", searchConditions...)
 	if err != nil {
