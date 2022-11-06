@@ -1,6 +1,12 @@
 package main
 
 type Config struct {
+	Main struct {
+		AppName             string `env:"APP_NAME" envDefault:"app"`
+		UpdateBrands        bool   `env:"UPDATE_BRANDS" envDefault:"false"`
+		UpdateVehicles      bool   `env:"UPDATE_VEHICLES" envDefault:"false"`
+		UpdateModifications bool   `env:"UPDATE_MODIFICATIONS" envDefault:"false"`
+	}
 	AoptDB struct {
 		Host     string `env:"AOPT_DB_HOST" envDefault:"localhost"`
 		Port     string `env:"AOPT_DB_PORT" envDefault:"3306"`

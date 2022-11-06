@@ -169,7 +169,13 @@ is_popular = :is_popular;`, brandTable), dto)
 		return nil, err
 	}
 
-	dto.ID, _ = result.LastInsertId()
+	if dto.ID == 0 {
+		id, err := result.LastInsertId()
+		if err != nil {
+			return nil, err
+		}
+		dto.ID = id
+	}
 
 	return dto.Entity(), nil
 }

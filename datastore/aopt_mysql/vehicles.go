@@ -29,8 +29,9 @@ type VehiclesRepository struct {
 
 func newVehiclesDTO(in *models.Vehicle) *vehiclesDTO {
 	out := &vehiclesDTO{
-		ID:   in.ID,
-		Name: in.Name,
+		ID:      in.ID,
+		Name:    in.Name,
+		BrandID: in.BrandID,
 	}
 
 	if in.TecDocID != nil {
@@ -47,6 +48,20 @@ func newVehiclesDTO(in *models.Vehicle) *vehiclesDTO {
 		}
 	}
 
+	if in.YearFrom != nil {
+		out.YearFrom = sql.NullString{
+			String: in.YearFrom.Format("2006-01-02"),
+			Valid:  true,
+		}
+	}
+
+	if in.YearTo != nil {
+		out.YearTo = sql.NullString{
+			String: in.YearTo.Format("2006-01-02"),
+			Valid:  true,
+		}
+	}
+
 	return out
 }
 
@@ -54,7 +69,7 @@ type vehiclesDTO struct {
 	ID       int64          `db:"id"`
 	TecDocID sql.NullInt64  `db:"tec_doc_id"`
 	AutoID   sql.NullInt64  `db:"auto_id"`
-	BrandID  sql.NullInt64  `db:"brand_id"`
+	BrandID  int64          `db:"brand_id"`
 	Name     string         `db:"name"`
 	YearFrom sql.NullString `db:"year_from"`
 	YearTo   sql.NullString `db:"year_to"`
@@ -62,8 +77,9 @@ type vehiclesDTO struct {
 
 func (dto *vehiclesDTO) Entity() *models.Vehicle {
 	out := &models.Vehicle{
-		ID:   dto.ID,
-		Name: dto.Name,
+		ID:      dto.ID,
+		Name:    dto.Name,
+		BrandID: dto.BrandID,
 	}
 
 	if dto.TecDocID.Valid {
@@ -165,8 +181,8 @@ func (repo *VehiclesRepository) Upsert(ctx context.Context, in *models.Vehicle) 
 	dto := newVehiclesDTO(in)
 
 	query, args, err := repo.db.BindNamed(fmt.Sprintf(`
-INSERT INTO %s (id, tec_doc_id, brand_id, name, year_from, year_to)
-VALUES (:id, :tec_doc_id, :brand_id, :name, :year_from, :year_to)
+INSERT INTO %s (id, tec_doc_id, auto_id, brand_id, name, year_from, year_to)
+VALUES (:id, :tec_doc_id, :auto_id, :brand_id, :name, :year_from, :year_to)
 ON DUPLICATE KEY UPDATE auto_id = :auto_id, 
 tec_doc_id = :tec_doc_id, 
 name       = :name, 
@@ -183,7 +199,13 @@ year_to    = :year_to;`, vehiclesTable), dto)
 		return nil, err
 	}
 
-	dto.ID, _ = result.LastInsertId()
+	if dto.ID == 0 {
+		id, err := result.LastInsertId()
+		if err != nil {
+			return nil, err
+		}
+		dto.ID = id
+	}
 
 	return dto.Entity(), nil
 }

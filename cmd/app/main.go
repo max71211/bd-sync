@@ -56,6 +56,7 @@ func main() {
 	autoCarMarkRepo := auto_mysql.NewCarMarRepository(autoDB)
 	autoCarModelRepo := auto_mysql.NewCarModelRepository(autoDB)
 	autoCarModificationRepo := auto_mysql.NewCarModificationRepository(autoDB)
+	characteristicRepo := auto_mysql.NewCarCharacteristicRepository(autoDB)
 
 	// AOPT repos
 	aoptBrandRepo := aopt_mysql.NewBrandsRepository(aoptDB)
@@ -67,11 +68,11 @@ func main() {
 	// region useCases
 
 	aoptUseCase := usecases.NewAoptUseCase(aoptBrandRepo, aoptVehicleRepo, aoptModificationsRepo)
-	autoUseCase := usecases.NewAutoUseCase(autoCarMarkRepo, autoCarModelRepo, autoCarModificationRepo)
+	autoUseCase := usecases.NewAutoUseCase(autoCarMarkRepo, autoCarModelRepo, autoCarModificationRepo, characteristicRepo)
 
 	syncUseCase := usecases.NewSyncUseCase(aoptUseCase, autoUseCase)
 
-	syncUseCase.SyncData(mainCtx)
+	syncUseCase.SyncData(mainCtx, cfg.Main.UpdateBrands, cfg.Main.UpdateVehicles, cfg.Main.UpdateModifications)
 
 	// endregion useCases
 

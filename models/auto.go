@@ -20,6 +20,8 @@ type CarModel struct {
 	DateCreate time.Time `json:"date_create"`
 	DateUpdate time.Time `json:"date_update"`
 	IDCarType  int       `json:"id_car_type"`
+	YearFrom   *int      `json:"year_from"`
+	YearTo     *int      `json:"year_to"`
 }
 
 type CarModification struct {
@@ -27,8 +29,8 @@ type CarModification struct {
 	IDCarSerie          int64         `json:"id_car_serie"`
 	IDCarModel          int64         `json:"id_car_model"`
 	Name                string        `json:"name"`
-	StartProductionYear *int          `json:"start_production_year"`
-	EndProductionYear   *int          `json:"end_production_year"`
+	StartProductionYear *string       `json:"start_production_year"`
+	EndProductionYear   *string       `json:"end_production_year"`
 	DateCreate          time.Time     `json:"date_create"`
 	DateUpdate          time.Time     `json:"date_update"`
 	IDCarType           int           `json:"id_car_type"`
@@ -42,4 +44,11 @@ type CarGeneration struct {
 	YearBegin *string `json:"year_begin"`
 	YearEnd   *string `json:"year_end"`
 	IDCarType int     `json:"id_car_type"`
+}
+
+type CarCharacteristic struct {
+	HorsePower       int    `json:"horse_power"`
+	FuelType         string `json:"fuel_type"`
+	ImpulsionType    string `json:"impulsion_type"`
+	CylinderCapacity int    `json:"cylinder_capacity"`
 }

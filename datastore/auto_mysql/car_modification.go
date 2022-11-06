@@ -34,8 +34,8 @@ type carModificationDTO struct {
 	IDCarSerie          int64          `db:"id_car_serie"`
 	IDCarModel          int64          `db:"id_car_model"`
 	Name                string         `db:"name"`
-	StartProductionYear *int           `db:"start_production_year"`
-	EndProductionYear   *int           `db:"end_production_year"`
+	StartProductionYear sql.NullString `db:"start_production_year"`
+	EndProductionYear   sql.NullString `db:"end_production_year"`
 	SerieName           string         `db:"serie_name"`
 	GenerationName      string         `db:"generation_name"`
 	GenerationYearBegin sql.NullString `db:"generation_year_begin"`
@@ -47,17 +47,25 @@ type carModificationDTO struct {
 
 func (dto *carModificationDTO) Entity() *models.CarModification {
 	out := &models.CarModification{
-		ID:                  dto.ID,
-		IDCarSerie:          dto.IDCarSerie,
-		IDCarModel:          dto.IDCarModel,
-		Name:                dto.Name,
-		StartProductionYear: dto.StartProductionYear,
-		EndProductionYear:   dto.EndProductionYear,
-		DateCreate:          time.Unix(dto.DateCreate, 0),
-		DateUpdate:          time.Unix(dto.DateUpdate, 0),
-		IDCarType:           dto.IDCarType,
+		ID:         dto.ID,
+		IDCarSerie: dto.IDCarSerie,
+		IDCarModel: dto.IDCarModel,
+		Name:       dto.Name,
+		SerieName:  dto.SerieName,
+		Generation: models.CarGeneration{
+			Name: dto.GenerationName,
+		},
+		DateCreate: time.Unix(dto.DateCreate, 0),
+		DateUpdate: time.Unix(dto.DateUpdate, 0),
+		IDCarType:  dto.IDCarType,
 	}
 
+	if dto.StartProductionYear.Valid {
+		out.StartProductionYear = &dto.StartProductionYear.String
+	}
+	if dto.EndProductionYear.Valid {
+		out.EndProductionYear = &dto.EndProductionYear.String
+	}
 	if dto.GenerationYearBegin.Valid {
 		out.Generation.YearBegin = &dto.GenerationYearBegin.String
 	}

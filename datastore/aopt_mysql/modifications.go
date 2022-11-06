@@ -26,21 +26,53 @@ type ModificationsRepository struct {
 	db *sqlx.DB
 }
 
+func newModificationsDTO(in *models.Modification) *modificationsDTO {
+	out := &modificationsDTO{
+		ID:                    in.ID,
+		VehicleID:             in.VehicleID,
+		BrandID:               in.BrandID,
+		ModificationName:      in.ModificationName,
+		ConstructionType:      in.ConstructionType,
+		CylinderCapacityLiter: in.CylinderCapacityLiter,
+		FuelType:              in.FuelType,
+		ImpulsionType:         in.ImpulsionType,
+		PowerHp:               in.PowerHp,
+		YearFrom:              in.YearTo,
+		YearTo:                in.YearTo,
+	}
+
+	if in.TecDocID != nil {
+		out.TecDocID = sql.NullInt64{
+			Int64: *in.TecDocID,
+			Valid: true,
+		}
+	}
+
+	if in.AutoID != nil {
+		out.AutoID = sql.NullInt64{
+			Int64: *in.AutoID,
+			Valid: true,
+		}
+	}
+
+	return out
+}
+
 type modificationsDTO struct {
 	ID                    int64         `db:"id"`
 	VehicleID             int64         `db:"vehicle_id"`
 	TecDocID              sql.NullInt64 `db:"tec_doc_id"`
 	AutoID                sql.NullInt64 `db:"auto_id"`
 	BrandID               int64         `db:"brand_id"`
-	VehicleTypeID         string        `db:"vehicle_type_id"`
+	VehicleTypeID         int64         `db:"vehicle_type_id"`
 	ModificationName      string        `db:"modification_name"`
 	ConstructionType      string        `db:"construction_type"`
-	CylinderCapacityLiter string        `db:"cylinder_capacity_liter"`
+	CylinderCapacityLiter int           `db:"cylinder_capacity_liter"`
 	FuelType              string        `db:"fuel_type"`
 	ImpulsionType         string        `db:"impulsion_type"`
-	PowerHp               string        `db:"power_hp"`
-	YearFrom              time.Time     `db:"year_from"`
-	YearTo                time.Time     `db:"year_to"`
+	PowerHp               int           `db:"power_hp"`
+	YearFrom              *time.Time    `db:"year_from"`
+	YearTo                *time.Time    `db:"year_to"`
 }
 
 func (dto *modificationsDTO) Entity() *models.Modification {
@@ -140,17 +172,16 @@ func (repo *ModificationsRepository) filteredQuery(in *models.ModificationFilter
 	return repo.db.Rebind(query), args, nil
 }
 
-func (repo *ModificationsRepository) Upsert(ctx context.Context, in *models.Vehicle) (*models.Vehicle, error) {
-	dto := newVehiclesDTO(in)
+func (repo *ModificationsRepository) Upsert(ctx context.Context, in *models.Modification) (*models.Modification, error) {
+	dto := newModificationsDTO(in)
 
 	query, args, err := repo.db.BindNamed(fmt.Sprintf(`
-INSERT INTO %s (id, tec_doc_id, brand_id, name, year_from, year_to)
-VALUES (:id, :tec_doc_id, :brand_id, :name, :year_from, :year_to)
+INSERT INTO %s (id, vehicle_id, tec_doc_id, auto_id, modification_name, construction_type, cylinder_capacity_liter, fuel_type, impulsion_type, power_hp, year_from, year_to, vehicle_type_id)
+VALUES (:id, :vehicle_id, :tec_doc_id, :auto_id, :modification_name, :construction_type, :cylinder_capacity_liter, :fuel_type, :impulsion_type, :power_hp, :year_from, :year_to, :vehicle_type_id)
 ON DUPLICATE KEY UPDATE auto_id = :auto_id, 
-tec_doc_id = :tec_doc_id, 
-name       = :name, 
+tec_doc_id = :tec_doc_id,
 year_from  = :year_from,
-year_to    = :year_to;`, vehiclesTable), dto)
+year_to    = :year_to;`, modificationsTable), dto)
 	if err != nil {
 		return nil, err
 	}
@@ -162,7 +193,13 @@ year_to    = :year_to;`, vehiclesTable), dto)
 		return nil, err
 	}
 
-	dto.ID, _ = result.LastInsertId()
+	if dto.ID == 0 {
+		id, err := result.LastInsertId()
+		if err != nil {
+			return nil, err
+		}
+		dto.ID = id
+	}
 
 	return dto.Entity(), nil
 }

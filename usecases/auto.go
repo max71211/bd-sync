@@ -5,11 +5,12 @@ import (
 	"context"
 )
 
-func NewAutoUseCase(markRepo carMarkRepo, modelRepo carModelRepo, modificationRepo carModificationRepo) *AutoUseCase {
+func NewAutoUseCase(markRepo carMarkRepo, modelRepo carModelRepo, modificationRepo carModificationRepo, characteristicRepo сarCharacteristicRepo) *AutoUseCase {
 	return &AutoUseCase{
-		markRepo:         markRepo,
-		modelRepo:        modelRepo,
-		modificationRepo: modificationRepo,
+		markRepo:           markRepo,
+		modelRepo:          modelRepo,
+		modificationRepo:   modificationRepo,
+		сharacteristicRepo: characteristicRepo,
 	}
 }
 
@@ -24,11 +25,15 @@ type carModificationRepo interface {
 	GetAll(ctx context.Context) ([]*models.CarModification, error)
 	GetByCarModelID(ctx context.Context, carModelID int64) ([]*models.CarModification, error)
 }
+type сarCharacteristicRepo interface {
+	CarModificationCharacteristic(ctx context.Context, carModelID int64) (*models.CarCharacteristic, error)
+}
 
 type AutoUseCase struct {
-	markRepo         carMarkRepo
-	modelRepo        carModelRepo
-	modificationRepo carModificationRepo
+	markRepo           carMarkRepo
+	modelRepo          carModelRepo
+	modificationRepo   carModificationRepo
+	сharacteristicRepo сarCharacteristicRepo
 }
 
 func (useCase AutoUseCase) GetMarks(ctx context.Context) ([]*models.CarMark, error) {
@@ -49,4 +54,8 @@ func (useCase AutoUseCase) GetModifications(ctx context.Context) ([]*models.CarM
 
 func (useCase AutoUseCase) GetModificationsByModelID(ctx context.Context, carModelID int64) ([]*models.CarModification, error) {
 	return useCase.modificationRepo.GetByCarModelID(ctx, carModelID)
+}
+
+func (useCase AutoUseCase) GetCarCharacteristic(ctx context.Context, carModificationID int64) (*models.CarCharacteristic, error) {
+	return useCase.сharacteristicRepo.CarModificationCharacteristic(ctx, carModificationID)
 }

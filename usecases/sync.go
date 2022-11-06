@@ -4,9 +4,11 @@ import (
 	"aopt-db-sync/models"
 	"context"
 	"errors"
+	"fmt"
 	"github.com/alexsergivan/transliterator"
 	"go.uber.org/zap"
 	"log"
+	"time"
 )
 
 var nameMapper = map[string]string{
@@ -22,24 +24,21 @@ func NewSyncUseCase(aoptDataManager aoptDataManager, autoDataManager autoDataMan
 }
 
 type aoptDataManager interface {
-	GetBrands(ctx context.Context) ([]*models.Brand, error)
-	GetBrandByID(ctx context.Context, brandID int64) (*models.Brand, error)
 	GetBrandByName(ctx context.Context, name string) (*models.Brand, error)
 	UpsertBrand(ctx context.Context, brand *models.Brand) (*models.Brand, error)
 
-	GetVehicles(ctx context.Context) ([]*models.Vehicle, error)
 	GetVehiclesByBrandAndName(ctx context.Context, brandID int64, name string) (*models.Vehicle, error)
 	UpsertVehicle(ctx context.Context, vehicle *models.Vehicle) (*models.Vehicle, error)
 
-	GetModifications(ctx context.Context) ([]*models.Modification, error)
+	GetModificationByVehicleAndName(ctx context.Context, vehicleID int64, name string) (*models.Modification, error)
+	UpsertModification(ctx context.Context, modification *models.Modification) (*models.Modification, error)
 }
 
 type autoDataManager interface {
 	GetMarks(ctx context.Context) ([]*models.CarMark, error)
-	GetModels(ctx context.Context) ([]*models.CarModel, error)
-	GetModifications(ctx context.Context) ([]*models.CarModification, error)
 	GetModelsByMarkID(ctx context.Context, markID int64) ([]*models.CarModel, error)
 	GetModificationsByModelID(ctx context.Context, carModelID int64) ([]*models.CarModification, error)
+	GetCarCharacteristic(ctx context.Context, carModificationID int64) (*models.CarCharacteristic, error)
 }
 
 type SyncUseCase struct {
@@ -47,23 +46,25 @@ type SyncUseCase struct {
 	autoManager autoDataManager
 }
 
-func (useCase SyncUseCase) SyncData(ctx context.Context) {
+func (useCase SyncUseCase) SyncData(ctx context.Context, updateBrands, updateVehicles, updateModifications bool) {
+	log.Println(updateBrands, "|", updateVehicles, "|", updateModifications)
 	carMarks, err := useCase.autoManager.GetMarks(ctx)
 	if err != nil {
 		log.Fatal("Get car marks error:", zap.Error(err))
 	}
 
-	for i, cm := range carMarks {
-		log.Println("##### BRAND:", cm.Name, "#######")
-		log.Println("################################")
-		cm.Name = useCase.transliterate(cm.Name)
-		brand, err := useCase.aoptManager.GetBrandByName(ctx, cm.Name)
+	for _, cm := range carMarks {
+		name := useCase.transliterate(cm.Name)
+		brand, err := useCase.aoptManager.GetBrandByName(ctx, name)
 		if errors.Is(err, models.ErrNoObject) {
+			log.Println("get brand by name:", cm.Name)
 			err = nil
 		}
 		if err != nil {
 			log.Fatal("get brand error:", err)
 		}
+
+		// region update_brand
 
 		if brand != nil {
 			brand.AutoID = &cm.ID
@@ -77,13 +78,16 @@ func (useCase SyncUseCase) SyncData(ctx context.Context) {
 			}
 		}
 
-		// region update_brand
+		if updateBrands {
+			brand, err = useCase.aoptManager.UpsertBrand(ctx, brand)
+			if err != nil {
+				log.Fatal("upsert brand error", err)
+			}
+		}
 
-		//brandUpdated, err := useCase.aoptManager.UpsertBrand(ctx, brand)
-		//if err != nil {
-		//	log.Fatal("upsert brand error", err)
-		//}
-		//log.Println("Updated brand", brandUpdated)
+		if brand.ID == 0 {
+			continue
+		}
 
 		// endregion update_brand
 
@@ -93,7 +97,7 @@ func (useCase SyncUseCase) SyncData(ctx context.Context) {
 		}
 
 		for _, cmd := range carModels {
-			name := useCase.transliterate(cmd.Name)
+			name = useCase.transliterate(cmd.Name)
 			vehicle, err := useCase.aoptManager.GetVehiclesByBrandAndName(ctx, brand.ID, name)
 			if errors.Is(err, models.ErrNoObject) {
 				log.Println("get vehicle by name:", cmd.Name)
@@ -103,39 +107,129 @@ func (useCase SyncUseCase) SyncData(ctx context.Context) {
 				log.Fatal("get vehicle by name error:", err)
 			}
 
+			// region update_vehicle
+
 			if vehicle != nil {
 				vehicle.AutoID = brand.AutoID
 			} else {
+				var tecDocID int64 = 0
 				vehicle = &models.Vehicle{
-					AutoID:   brand.AutoID,
-					TecDocID: brand.TecDocID,
+					ID:       0,
+					AutoID:   &cmd.ID,
+					TecDocID: &tecDocID,
 					BrandID:  brand.ID,
 					Name:     cmd.Name,
 				}
+
+				if cmd.YearFrom != nil {
+					start, err := time.Parse("2006-01-02", fmt.Sprintf("%d-01-01", *cmd.YearFrom))
+					if err == nil {
+						vehicle.YearFrom = &start
+					}
+				}
+
+				if cmd.YearTo != nil {
+					end, err := time.Parse("2006-01-02", fmt.Sprintf("%d-12-31", *cmd.YearTo))
+					if err == nil {
+						vehicle.YearTo = &end
+					}
+				}
 			}
 
-			log.Println("Model:", cmd.Name, "Vehicle:", vehicle.Name)
+			if updateVehicles {
+				vehicle, err = useCase.aoptManager.UpsertVehicle(ctx, vehicle)
+				if err != nil {
+					log.Fatal("upsert vehicle error:", err)
+				}
+			}
 
-			// region update_vehicle
-
-			//updatedVehicle, err := useCase.aoptManager.UpsertVehicle(ctx, vehicle)
-			//if err != nil {
-			//	log.Fatal("upsert vehicle error", err)
-			//}
-			//log.Println("updated vehicle", updatedVehicle)
+			if vehicle.ID == 0 {
+				continue
+			}
 
 			// endregion update_vehicle
 
-			mdf, err := useCase.autoManager.GetModificationsByModelID(ctx, cmd.ID)
+			autoModifications, err := useCase.autoManager.GetModificationsByModelID(ctx, cmd.ID)
+			if errors.Is(err, models.ErrNoObject) {
+				err = nil
+			}
 			if err != nil {
 				log.Fatal("GET modifications err", err)
 			}
 
-			log.Println("MODEL:", cmd.Name, "| MODEL_MODIFICATIONS:", len(mdf))
-		}
-		log.Println()
-		if i == 5 {
-			break
+			for _, mdf := range autoModifications {
+				name := useCase.transliterate(mdf.Name)
+				modification, err := useCase.aoptManager.GetModificationByVehicleAndName(ctx, vehicle.ID, name)
+				if errors.Is(err, models.ErrNoObject) {
+					log.Println("get modification by name:", mdf.Name)
+					err = nil
+				}
+
+				// region update_modification
+
+				if modification != nil {
+					modification.AutoID = &mdf.ID
+				} else {
+					var tecDocID int64 = 0
+					modification = &models.Modification{
+						ID:               0,
+						AutoID:           &mdf.ID,
+						TecDocID:         &tecDocID,
+						VehicleID:        vehicle.ID,
+						BrandID:          brand.ID,
+						VehicleTypeID:    0,
+						ModificationName: mdf.Name,
+						ConstructionType: mdf.SerieName,
+					}
+
+					if mdf.StartProductionYear != nil {
+						start, err := time.Parse("2006-01-02", fmt.Sprintf("%s-01-01", *mdf.StartProductionYear))
+						if err == nil {
+							modification.YearFrom = &start
+						}
+					}
+					if modification.YearFrom == nil && mdf.Generation.YearBegin != nil {
+						start, err := time.Parse("2006-01-02", fmt.Sprintf("%s-01-01", *mdf.Generation.YearBegin))
+						if err == nil {
+							modification.YearFrom = &start
+						}
+					}
+
+					if mdf.EndProductionYear != nil {
+						end, err := time.Parse("2006-01-02", fmt.Sprintf("%s-12-31", *mdf.EndProductionYear))
+						if err == nil {
+							modification.YearTo = &end
+						}
+					}
+					if modification.YearTo == nil && mdf.Generation.YearEnd != nil {
+						end, err := time.Parse("2006-01-02", fmt.Sprintf("%s-12-31", *mdf.Generation.YearEnd))
+						if err == nil {
+							modification.YearTo = &end
+						}
+					}
+
+					characteristic, err := useCase.autoManager.GetCarCharacteristic(ctx, mdf.ID)
+					if err != nil {
+						log.Println("get car characteristic error:", err)
+					}
+
+					if characteristic != nil {
+						modification.FuelType = characteristic.FuelType
+						modification.ImpulsionType = characteristic.ImpulsionType
+						modification.PowerHp = characteristic.HorsePower
+						modification.CylinderCapacityLiter = characteristic.CylinderCapacity
+					}
+				}
+
+				if updateModifications {
+					modification, err = useCase.aoptManager.UpsertModification(ctx, modification)
+					if err != nil {
+						log.Println("upsert modification error:", err)
+					}
+				}
+
+				// endregion update_modification
+			}
 		}
 	}
 }

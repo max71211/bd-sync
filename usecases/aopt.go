@@ -23,7 +23,7 @@ type vehicleRepo interface {
 }
 type modificationRepo interface {
 	Get(ctx context.Context, in *models.ModificationFilter) ([]*models.Modification, error)
-	Upsert(ctx context.Context, in *models.Vehicle) (*models.Vehicle, error)
+	Upsert(ctx context.Context, in *models.Modification) (*models.Modification, error)
 }
 
 type AoptUseCase struct {
@@ -104,4 +104,21 @@ func (useCase AoptUseCase) UpsertVehicle(ctx context.Context, vehicle *models.Ve
 
 func (useCase AoptUseCase) GetModifications(ctx context.Context) ([]*models.Modification, error) {
 	return useCase.modificationRepo.Get(ctx, nil)
+}
+
+func (useCase AoptUseCase) GetModificationByVehicleAndName(ctx context.Context, vehicleID int64, name string) (*models.Modification, error) {
+	result, err := useCase.modificationRepo.Get(ctx, &models.ModificationFilter{VehicleID: &vehicleID, Search: &name})
+	if err != nil {
+		return nil, err
+	}
+
+	if len(result) == 0 {
+		return nil, models.ErrNoObject
+	}
+
+	return result[0], nil
+}
+
+func (useCase AoptUseCase) UpsertModification(ctx context.Context, modification *models.Modification) (*models.Modification, error) {
+	return useCase.modificationRepo.Upsert(ctx, modification)
 }
